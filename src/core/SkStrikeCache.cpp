@@ -32,8 +32,8 @@ SkStrikeCache* SkStrikeCache::GlobalStrikeCache() {
         static thread_local auto* cache = new SkStrikeCache;
         return cache;
     }
-    static auto* cache = new SkStrikeCache;
-    return cache;
+    static std::unique_ptr<SkStrikeCache> cache = std::make_unique<SkStrikeCache>();
+    return cache.get();
 }
 
 auto SkStrikeCache::findOrCreateStrike(const SkStrikeSpec& strikeSpec) -> sk_sp<SkStrike> {
