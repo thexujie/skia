@@ -1400,6 +1400,23 @@ public:
         return this->makeTransform(SkMatrix::Scale(sx, sy), SkApplyPerspectiveClip::kNo);
     }
 
+    class IPathTessellateSink {
+	public:
+		virtual ~IPathTessellateSink() = default;
+
+		virtual void addTriangles(int numTriangles, const float* vertices) = 0;
+    };
+
+    /**
+     * Vertex = SkPoint + Alpha
+    */
+	void toAATriangles(SkScalar tolerance, const SkRect& clipBounds, IPathTessellateSink* tessellateSink);
+
+    /**
+     * Vertex = SkPoint
+     */
+    void toTriangles(SkScalar tolerance, const SkRect& clipBounds, IPathTessellateSink* tessellateSink);
+
     /** Returns last point on SkPath in lastPt. Returns false if SkPoint array is empty,
         storing (0, 0) if lastPt is not nullptr.
 

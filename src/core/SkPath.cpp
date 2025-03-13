@@ -32,12 +32,17 @@
 #include "src/core/SkPointPriv.h"
 #include "src/core/SkStringUtils.h"
 
+#include "src/gpu/ganesh/geometry/GrAATriangulator.h"
+#include "src/gpu/ganesh/GrEagerVertexAllocator.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <iterator>
 #include <limits.h>
 #include <utility>
+
+
 
 struct SkPath_Storage_Equivalent {
     void*    fPtr;
@@ -1758,6 +1763,37 @@ void SkPath::transform(const SkMatrix& matrix, SkPath* dst, SkApplyPerspectiveCl
         }
 
         SkDEBUGCODE(dst->validate();)
+    }
+}
+
+void SkPath::toAATriangles(SkScalar tolerance, const SkRect& clipBounds, IPathTessellateSink* tessellateSink) {
+    GrCpuVertexAllocator allocator;
+    int actualCount = GrAATriangulator::PathToAATriangles(*this, tolerance, clipBounds, &allocator);
+    if (actualCount <= 0) return;
+
+    sk_sp<GrThreadSafeCache::VertexData> data = allocator.detachVertexData();
+    int numVertices = data->numVertices();
+    const float* vertices = (const float*)data->vertices();
+    int vertexSize = data->vertexSize();
+    if (vertexSize == sizeof(float) * 3 && numVertices % 3 == 0) {
+        tessellateSink->addTriangles(numVertices / 3, vertices);
+    }
+}
+
+void SkPath::toTriangles(SkScalar tolerance,
+                           const SkRect& clipBounds,
+                           IPathTessellateSink* tessellateSink) {
+    GrCpuVertexAllocator allocator;
+    bool isLinear;
+    int actualCount = GrTriangulator::PathToTriangles(*this, tolerance, clipBounds, &allocator, &isLinear);
+    if (actualCount <= 0) return;
+
+    sk_sp<GrThreadSafeCache::VertexData> data = allocator.detachVertexData();
+    int numVertices = data->numVertices();
+    const float* vertices = (const float*)data->vertices();
+    int vertexSize = data->vertexSize();
+    if (vertexSize == sizeof(float) * 2 && numVertices % 3 == 0) {
+        tessellateSink->addTriangles(numVertices / 3, vertices);
     }
 }
 
